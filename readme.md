@@ -4,6 +4,39 @@ An intelligent, lightweight operations command center for SMBs that unifies Gmai
 
 ---
 
+## Quick workflow execution (Weekly Review)
+
+This repository includes a minimal WorkflowPlanner and a ToolRouter stub so you can simulate workflows locally without external credentials.
+
+1. Start the backend (PowerShell):
+
+```powershell
+python main.py
+```
+
+2. Execute the weekly review workflow via the API:
+
+```powershell
+curl -X POST "http://localhost:8000/workflows/execute" -H "Content-Type: application/json" -d "{\"workflow_name\": \"weekly_review\"}"
+```
+
+3. Or run the demo runner locally (no server required):
+
+```powershell
+python demo_runner.py
+```
+
+The demo will print a step-by-step execution summary using the ToolRouter stub (no external API calls are made).
+
+---
+
+For full project setup and other details, see the project README in the repository root.
+# AI Operations Command Center (AIOCC)
+
+An intelligent, lightweight operations command center for SMBs that unifies Gmail, Slack, Notion, and Google Drive through the Composio ToolRouter.
+
+---
+
 ## Table of Contents
 
 - Project overview
@@ -234,6 +267,25 @@ pytest tests/
 - Linting: run flake8 or pylint as configured
 - Tests: pytest (unit + small integration mocks)
 
+## Testing & CI (developer)
+
+Unit and integration tests are provided under the `tests/` directory. The project includes a GitHub Actions workflow that runs tests on push and pull requests.
+
+Run tests locally (after installing dependencies):
+
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pytest -q
+```
+
+GitHub Actions:
+
+- Workflow file: `.github/workflows/tests.yml`
+- Runs on pushes and PRs against `main` using Python 3.9 and executes `pytest`.
+
+
 ## Contributors
 
 - Utkarsh Tiwari — Project Lead
@@ -252,4 +304,88 @@ This project is licensed under the MIT License — see the LICENSE file for deta
 Built with ❤️ using Composio ToolRouter, OpenAI APIs, Notion SDK, Slack SDK, and Google APIs.
 
 ---
+
+## Development Notes
+
+- Why `composio-sdk` was replaced with a stub
+
+   The `composio-sdk` entry in `requirements.txt` was removed because the package is not available on PyPI and would block dependency installation. During early development we use a local `ToolRouterStub` (in `src/core/toolrouter_config.py`) that implements the minimal interface required by `WorkflowPlanner` so you can run tests and iterate without external credentials.
+
+- How to plug in the real SDK later
+
+   1. If `composio-sdk` becomes available on PyPI, add it back to `requirements.txt` and run `pip install -r requirements.txt`.
+   2. Prefer adding an adapter that implements `ToolRouterInterface` (see `src/core/interfaces.py`) and register the real client behind that interface. The `ToolRouterStub` already implements the same methods and can be swapped with a real implementation with minimal changes.
+   3. If the real SDK is private, configure pip to use a private index or vendor the SDK into your environment and document the install steps in this README.
+
+- Running tests and CI locally
+
+   - Create venv and install deps:
+
+      ```powershell
+      python -m venv venv
+      & .\venv\Scripts\python.exe -m pip install --upgrade pip
+      & .\venv\Scripts\python.exe -m pip install -r requirements.txt
+      ```
+
+   - Run full test suite:
+
+      ```powershell
+      & .\venv\Scripts\python.exe -m pytest -q
+      ```
+
+   - Run linters and type checks (locally match CI):
+
+      ```powershell
+      & .\venv\Scripts\python.exe -m pip install ruff mypy black
+      & .\venv\Scripts\python.exe -m ruff check .
+      & .\venv\Scripts\python.exe -m mypy src
+      & .\venv\Scripts\python.exe -m black --check .
+      ```
+## Cross-Tool Orchestration (Gmail + Slack + Notion)
+
+This repository now includes a cross-tool workflow template `weekly_review_cross_tool` that demonstrates how AIOCC can orchestrate Gmail, Slack, and Notion in a single automation.
+
+Quick demo (start the backend or run the demo script):
+
+1) Run via HTTP API (backend must be running at localhost:8000):
+
+```powershell
+curl -X POST http://localhost:8000/workflows/execute \
+   -H "Content-Type: application/json" \
+   -d '{"workflow_name": "weekly_review_cross_tool", "params": {"channel": "#general", "database_id": "db_1"}}'
+```
+
+2) Run demo script locally (no server required):
+
+```powershell
+python scripts/demo_cross_tool.py
+```
+
+Required environment variables (add to `.env` from `.env.example`):
+
+```
+SLACK_BOT_TOKEN=
+GMAIL_API_KEY=
+NOTION_API_KEY=
+OPENAI_API_KEY=
+```
+
+Interpreting structured workflow logs
+
+- Each workflow run is saved as a structured JSON `log` in the `workflow_runs` table. The `log` contains an `executions` list showing each tool action, its status, and tool-specific outputs (for example Gmail returns `messages`, Slack returns `ts`, Notion returns `page_id`).
+- Example `log` fragment:
+
+```json
+{
+   "executions": [
+      {"tool": "gmail", "action": "fetch_messages", "status": "ok", "messages": [...]},
+      {"tool": "slack", "action": "post_message", "status": "ok", "ts": "12345"},
+      {"tool": "notion", "action": "create_summary_page", "status": "ok", "page_id": "p_1"}
+   ],
+   "params": {"channel": "#tests", "database_id": "db_1"}
+}
+```
+
+The cross-tool demo shows how data flows from Gmail -> Slack -> Notion. This structured logging makes it easy to build analytics on success rate, average duration, and failure modes.
+
 
