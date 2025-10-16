@@ -49,7 +49,11 @@ class NotionAgent(BaseAgent):
         client = await self._ensure_client()
         if client:
             try:
-                tasks = await client.query_tasks(database_id=database_id, limit=limit)
+                res = client.query_tasks(database_id=database_id, limit=limit)
+                if asyncio.iscoroutine(res):
+                    tasks = await res  # type: ignore
+                else:
+                    tasks = res
                 return tasks
             except Exception as e:
                 logger.exception("Notion poll failed: %s", e)
@@ -65,10 +69,16 @@ class NotionAgent(BaseAgent):
         if client:
             try:
                 if action == "create_summary_page":
-                    page = await client.create_page(payload)
+                    res = client.create_page(payload)
+                    if asyncio.iscoroutine(res):
+                        page = await res  # type: ignore
+                    else:
+                        page = res
                     return {"status": "ok", "page_id": page.get("id")}
                 elif action == "update_task":
-                    res = await client.update_task(payload.get("id"), payload)
+                    res = client.update_task(payload.get("id"), payload)
+                    if asyncio.iscoroutine(res):
+                        res = await res  # type: ignore
                     return {"status": "ok", "result": res}
             except Exception as e:
                 logger.exception("Notion act failed: %s", e)

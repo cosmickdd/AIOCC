@@ -60,7 +60,11 @@ class GmailAgent:
         if client:
             # integrate with real Gmail API
             try:
-                msgs = await client.fetch_messages(label=label, limit=limit)
+                res = client.fetch_messages(label=label, limit=limit)
+                if asyncio.iscoroutine(res):
+                    msgs = await res  # type: ignore
+                else:
+                    msgs = res
                 return msgs
             except Exception as e:
                 logger.exception("Gmail poll failed: %s", e)
@@ -77,10 +81,14 @@ class GmailAgent:
         if client:
             try:
                 if action == "mark_processed":
-                    res = await client.mark_message(payload.get("id"))
+                    res = client.mark_message(payload.get("id"))
+                    if asyncio.iscoroutine(res):
+                        res = await res  # type: ignore
                     return {"status": "ok", "result": res}
                 elif action == "send_followup":
-                    res = await client.send_message(payload)
+                    res = client.send_message(payload)
+                    if asyncio.iscoroutine(res):
+                        res = await res  # type: ignore
                     return {"status": "ok", "result": res}
             except Exception as e:
                 logger.exception("Gmail act failed: %s", e)

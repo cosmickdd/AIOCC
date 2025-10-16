@@ -105,7 +105,12 @@ class WorkflowPlanner:
             backoff = 0.5
             while attempt < max_attempts:
                 try:
-                    res = await self.router.multi_execute([ex]) if asyncio.iscoroutinefunction(self.router.multi_execute) else self.router.multi_execute([ex])
+                    # router.multi_execute may be async or sync and may return a coroutine or value
+                    execute_result = self.router.multi_execute([ex])
+                    if asyncio.iscoroutine(execute_result):
+                        res = await execute_result
+                    else:
+                        res = execute_result
                     # router.multi_execute returns list; extend results
                     if isinstance(res, list):
                         results.extend(res)

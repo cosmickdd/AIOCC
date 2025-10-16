@@ -13,10 +13,14 @@ def run_weekly_review_demo():
     planner = WorkflowPlanner(router=router, store=store)
 
     print("Running demo: weekly_review")
-    summary = planner.run("weekly_review")
+    # planner.run is async; execute in event loop for demo
+    import asyncio
+
+    summary = asyncio.run(planner.run("weekly_review"))
     print("Execution summary:")
     for exec_result in summary.get("executions", []):
-        print(f" - {exec_result['tool']}.{exec_result['action']} -> {exec_result['status']}")
+        status = exec_result.get("status") or exec_result.get("result", {}).get("status") if isinstance(exec_result.get("result"), dict) else exec_result.get("status")
+        print(f" - {exec_result.get('tool')}.{exec_result.get('action')} -> {status}")
 
 
 if __name__ == "__main__":
