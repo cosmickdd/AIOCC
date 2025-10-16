@@ -1,10 +1,33 @@
-import React from 'react'
-import useSWR from 'swr'
+"use client"
+import React, { useEffect, useState } from 'react'
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || ''
+const getApiBase = () => {
+  if (API_BASE && API_BASE.length > 0) return API_BASE
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:8000`
+  }
+  return ''
+}
+const fetcher = (url: string) => fetch(`${getApiBase()}${url}`).then(r => r.json())
+
+function useFetch(url: string) {
+  const [data, setData] = useState<any>(null)
+  const [error, setError] = useState<any>(null)
+  useEffect(() => {
+    let mounted = true
+    fetcher(url)
+      .then((d) => mounted && setData(d))
+      .catch((e) => mounted && setError(e))
+    return () => {
+      mounted = false
+    }
+  }, [url])
+  return { data, error }
+}
 
 export default function AnalyticsPage() {
-  const { data } = useSWR('/analytics/failures', fetcher)
+  const { data } = useFetch('/analytics/failures')
   const failures = data?.failures || []
 
   return (

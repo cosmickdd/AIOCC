@@ -16,9 +16,11 @@ app = FastAPI(title="AIOCC - AI Operations Command Center")
 
 # CORS - allow local dashboard to query analytics endpoints
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# Also allow Next.js dev default origin when NEXT_PUBLIC_API_URL isn't used
+ALLOWED_ORIGINS = [FRONTEND_URL, "http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
