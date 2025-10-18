@@ -340,6 +340,19 @@ Built with ❤️ using Composio ToolRouter, OpenAI APIs, Notion SDK, Slack SDK,
       & .\venv\Scripts\python.exe -m ruff check .
       & .\venv\Scripts\python.exe -m mypy src
       & .\venv\Scripts\python.exe -m black --check .
+
+      ### Secrets, rotation, and secure storage
+
+      Follow these minimal practices to keep credentials safe:
+
+      - Never commit `.env` or secrets to Git. Add `.env` to `.gitignore` (this repo already ignores it).
+      - Use short-lived tokens and rotate them if you suspect exposure.
+      - For CI/CD, store secrets in the platform's secure secret storage (e.g., GitHub Secrets, Azure Key Vault) and inject them at build/run time.
+      - When rotating a key:
+         1. Revoke the old key in the provider console.
+         2. Generate a new key and update your local `.env` or secret store.
+         3. Restart services that use the key and run integration tests to confirm functionality.
+         4. If a key was committed to Git, rotate it immediately and follow the repository history purge process if necessary.
       ```
 ## Cross-Tool Orchestration (Gmail + Slack + Notion)
 
