@@ -40,8 +40,10 @@ async def compute_metrics(store) -> Dict[str, Any]:
     avg_duration = sum(durations) / len(durations) if durations else 0.0
 
     # top_failed_tools: inspect logs for 'executions' and failure counts per tool
-    tool_fail_counts = {}
-    wf_counts = {}
+    from typing import Dict
+
+    tool_fail_counts: Dict[str, int] = {}
+    wf_counts: Dict[str, int] = {}
     for r in runs:
         wf = r.get("workflow_name")
         wf_counts[wf] = wf_counts.get(wf, 0) + 1

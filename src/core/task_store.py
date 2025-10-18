@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
@@ -101,7 +101,7 @@ class TaskStore:
     async def connect(self):
         await self._db.connect()
 
-    async def create_run(self, workflow_name: str, started_at: str, status: str = "pending", log: dict | list | str | None = None) -> int:
+    async def create_run(self, workflow_name: str, started_at: str, status: str = "pending", log: Optional[Union[dict, list, str]] = None) -> int:
         try:
             import json as _json
 
@@ -113,7 +113,7 @@ class TaskStore:
             logger.exception("Failed to create workflow run: %s", e)
             raise WorkflowExecutionError("Failed to create workflow run") from e
 
-    async def update_run(self, run_id: int, finished_at: str, status: str, log: dict | list | str | None = None):
+    async def update_run(self, run_id: int, finished_at: str, status: str, log: Optional[Union[dict, list, str]] = None):
         try:
             import json as _json
 
@@ -124,12 +124,21 @@ class TaskStore:
             logger.exception("Failed to update workflow run: %s", e)
             raise WorkflowExecutionError("Failed to update workflow run") from e
 
-    async def list_runs(self, limit: int = 20):
+    async def list_runs(self, limit: int = 20, offset: int = 0, query: Optional[str] = None):
         try:
             import json as _json
 
-            query = workflow_runs_table.select().limit(limit).order_by(workflow_runs_table.c.id.desc())
-            rows = await self._db.fetch_all(query)
+            # Build base select
+            sel = workflow_runs_table.select()
+            # Apply simple search on workflow_name or status if provided
+            if query:
+                # SQLite simple LIKE search; databases/sqlalchemy will handle parameterization
+                sel = sel.where(
+                    (workflow_runs_table.c.workflow_name.ilike(f"%{query}%")) | (workflow_runs_table.c.status.ilike(f"%{query}%"))
+                )
+            # Order and limit/offset
+            sel = sel.order_by(workflow_runs_table.c.id.desc()).limit(limit).offset(offset)
+            rows = await self._db.fetch_all(sel)
             out = []
             for r in rows:
                 obj = dict(r)

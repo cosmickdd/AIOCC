@@ -107,14 +107,14 @@ AI Operations Command Center (AIOCC)
 │   │   ├── reminder_agent.py
 │   │   ├── escalation_agent.py
 │   │   └── workflow_templates/
-│   ├── dashboard/
-│   │   └── frontend/
 │   ├── core/
 │   │   ├── toolrouter_config.py
 │   │   ├── task_store.py
 │   │   └── analytics.py
 │   └── utils/
 │       └── logger.py
+├── dashboard/
+│   └── app/
 ├── .env.example
 ├── requirements.txt
 ├── README.md
@@ -162,7 +162,7 @@ Edge cases considered: empty inboxes/threads, duplicate tasks from multiple sour
 
 Optional: Frontend dashboard (if included)
 
-   cd src/dashboard/frontend
+   cd dashboard
    npm install
    npm run dev
 
